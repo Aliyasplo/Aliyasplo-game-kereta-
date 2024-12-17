@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Kereta - Kawalan Skrin Sentuh</title>
+    <style>
+        /* CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #fff;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            background: linear-gradient(to bottom, #555, #333);
+            display: block;
+            margin: 20px auto;
+            border: 5px solid #444;
+            border-radius: 10px;
+            touch-action: none; /* Elak zoom automatik */
+        }
+
+        #score {
+            font-size: 1.5rem;
+            margin-top: 10px;
+        }
+
+        #gameOverText {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            color: red;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Kereta - Kawalan Skrin Sentuh</h1>
+    <div id="score">Skor: 0</div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="gameOverText">Game Over! Tap untuk Restart</div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+        const gameOverText = document.getElementById("gameOverText");
+
+        let gameOver = false;
+        let score = 0;
+
+        // Tetapkan pemain
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 120,
+            width: 50,
+            height: 100,
+            color: "red",
+            speed: 5
+        };
+
+        // Halangan
+        const obstacles = [];
+        function addObstacle() {
+            const obstacle = {
+                x: Math.random() * (canvas.width - 50),
+                y: -100,
+                width: 50,
+                height: 100,
+                color: "yellow",
+                speed: Math.random() * 3 + 3
+            };
+            obstacles.push(obstacle);
+        }
+
+        // Kawalan sentuhan
+        let touchX;
+        canvas.addEventListener("touchstart", (e) => {
+            touchX = e.touches[0].clientX;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            const deltaX = e.touches[0].clientX - touchX;
+            if (Math.abs(deltaX) > 5) { // Hadkan gerakan
+                if (deltaX > 0 && player.x < canvas.width - player.width) {
+                    player.x += player.speed;
+                } else if (deltaX < 0 && player.x > 0) {
+                    player.x -= player.speed;
+                }
+                touchX = e.touches[0].clientX;
+            }
+        });
+
+        // Periksa perlanggaran
+        function checkCollision(obstacle) {
+            return (
+                player.x < obstacle.x + obstacle.width &&
+                player.x + player.width > obstacle.x &&
+                player.y < obstacle.y + obstacle.height &&
+                player.y + player.height > obstacle.y
+            );
+        }
+
+        // Fungsi utama game loop
+        function gameLoop() {
+            if (gameOver) {
+                gameOverText.style.display = "block";
+                return;
+            }
+
+            // Kosongkan skrin
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Lukis pemain
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Gerakkan dan lukis halangan
+            obstacles.forEach((obstacle, index) => {
+                obstacle.y += obstacle.speed;
+
+                // Lukis halangan
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+                // Periksa perlanggaran
+                if (checkCollision(obstacle)) {
+                    gameOver = true;
+                }
+
+                // Hapus halangan jika keluar skrin
+                if (obstacle.y > canvas.height) {
+                    obstacles.splice(index, 1);
+                    score++;
+                    scoreDisplay.textContent = "Skor: " + score;
+                }
+            });
+
+            // Tambah halangan baru
+            if (Math.random() < 0.02) {
+                addObstacle();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Mula game
+        gameLoop();
+
+        // Restart permainan
+        gameOverText.addEventListener("click", () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
